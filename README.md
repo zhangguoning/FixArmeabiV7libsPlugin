@@ -1,0 +1,1 @@
+# FixArmeabiV7libsPlugin
