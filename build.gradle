@@ -1,0 +1,55 @@
+// First, apply the publishing plugin
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle.publish:plugin-publish-plugin:0.13.0"
+    }
+}
+
+apply plugin: "com.gradle.plugin-publish"
+apply plugin: 'groovy'
+// Apply other plugins here, e.g. java plugin for a plugin written in java or
+// the groovy plugin for a plugin written in groovy
+
+// If your plugin has any external java dependencies, Gradle will attempt to
+// downloaded them from JCenter for anyone using the plugins DSL
+// so you should probably use JCenter for dependency resolution in your own
+// project.
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile gradleApi()
+    compile localGroovy() //not needed for Java plugins
+    // other dependencies that your plugin requires
+}
+
+// Unless overridden in the pluginBundle config DSL, the project version will
+// be used as your plugin version when publishing
+
+// The configuration example below shows the minimum required properties
+// configured to publish your plugin to the plugin portal
+pluginBundle {
+    website = 'https://github.com/zhangguoning/FixArmeabiV7libsPlugin'
+    vcsUrl = 'https://github.com/zhangguoning/FixArmeabiV7libsPlugin'
+    description = 'A plugin to Fix lack armeabi-v7 so files when the ABI upgrade to armeabi-v7(the armeabi so file exist, but the armeabi-v7 so file not exist).' // 你发布插件的描述
+
+    plugins {
+        fix_v7libsPlugin {
+            tags = ['Android', 'armeabi-v7', 'so']
+            id = 'cn.ning.android.gradle.plugin.fix_v7libs'
+            displayName = 'FixArmeabiV7libsPlugin'
+            version = "1.0.1"
+        }
+    }
+    mavenCoordinates {
+        groupId = "cn.ning.android.gradle.plugin"
+        artifactId = "fix_v7libs"
+        version = "1.0.1"
+    }
+}
