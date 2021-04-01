@@ -1,4 +1,4 @@
-package cn.ning.android.gradle.plugin
+package com.github.zhangguoning.plugin
 
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
@@ -15,7 +15,6 @@ class FixArmeabiV7libsPlugin implements Plugin<Project> {
     void apply(Project project) {
 
         project.afterEvaluate {
-
             project.tasks.findAll {
                 task ->
                     if (task.path.startsWith(":app:transformNativeLibsWithStripDebugSymbolFor")) {

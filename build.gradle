@@ -1,55 +1,136 @@
-// First, apply the publishing plugin
-buildscript {
-    repositories {
-        maven {
-            url "https://plugins.gradle.org/m2/"
-        }
-    }
-    dependencies {
-        classpath "com.gradle.publish:plugin-publish-plugin:0.13.0"
-    }
+plugins {
+    id 'java'
+    id 'maven-publish'  // maven 发布插件
+    id 'signing'  // 签名插件
 }
 
-apply plugin: "com.gradle.plugin-publish"
-apply plugin: 'groovy'
-// Apply other plugins here, e.g. java plugin for a plugin written in java or
-// the groovy plugin for a plugin written in groovy
+//  组 和 版本配置
+group 'com.github.zhangguoning.plugin'
+version '0.0.1'
+//version '0.0.1'
 
-// If your plugin has any external java dependencies, Gradle will attempt to
-// downloaded them from JCenter for anyone using the plugins DSL
-// so you should probably use JCenter for dependency resolution in your own
-// project.
+// 编译版本和编码配置
+sourceCompatibility = 1.8
+
+compileJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+    [compileJava]*.options*.encoding = 'UTF-8'
+}
+compileTestJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+    [compileTestJava]*.options*.encoding = 'UTF-8'
+}
+// 测试用例没有写好，还不能自动测试
+// 跳过所有文件的编译测试；不是跳过compileTestJava task 而是在执行该task的时候，跳过所有的测试文件
+test {
+    exclude '**/*.class'
+}
+
 repositories {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
-    compile gradleApi()
-    compile localGroovy() //not needed for Java plugins
-    // other dependencies that your plugin requires
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    testCompileOnly 'junit:junit:4.12'
+    testCompileOnly 'org.apache.commons:commons-lang3:3.8.1'
+    testCompileOnly 'ch.qos.logback:logback-core:1.1.7'
+    testCompileOnly 'ch.qos.logback:logback-classic:1.1.7'
+    testCompileOnly 'org.apache.commons:commons-csv:1.6'
 }
 
-// Unless overridden in the pluginBundle config DSL, the project version will
-// be used as your plugin version when publishing
+// 后面的都是打包的配置
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allJava
+}
+// 生成 javadoc jar
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+// javadoc 配置，这里是自定义了 java doc 的一些配置
+javadoc {
+    description = "Generates project-level javadoc for use in -javadoc jar"
 
-// The configuration example below shows the minimum required properties
-// configured to publish your plugin to the plugin portal
-pluginBundle {
-    website = 'https://github.com/zhangguoning/FixArmeabiV7libsPlugin'
-    vcsUrl = 'https://github.com/zhangguoning/FixArmeabiV7libsPlugin'
-    description = 'A plugin to Fix lack armeabi-v7 so files when the ABI upgrade to armeabi-v7(the armeabi so file exist, but the armeabi-v7 so file not exist).' // 你发布插件的描述
+    options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+    options.author = true
+    options.version = true
+    options.header = project.name
+    options.addStringOption('Xdoclint:none', '-quiet')
 
-    plugins {
-        fix_v7libsPlugin {
-            tags = ['Android', 'armeabi-v7', 'so']
-            id = 'cn.ning.android.gradle.plugin.fix_v7libs'
-            displayName = 'FixArmeabiV7libsPlugin'
-            version = "1.0.1"
+    // suppress warnings due to cross-module @see and @link references;
+    // note that global 'api' task does display all warnings.
+    logging.captureStandardError LogLevel.INFO
+    logging.captureStandardOutput LogLevel.INFO // suppress "## warnings" message
+    options.encoding = "UTF-8"  //编码一定要配置否则直接出错
+    options.charSet = 'UTF-8'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            version "${version}"
+            from components.java
+            artifact sourcesJar
+            artifact javadocJar
+
+            // https://docs.gradle.org/current/dsl/org.gradle.api.publish.maven.MavenPublication.html
+            pom {
+                name = "fix_v7libs"
+                description = "A plugin to Fix lack armeabi-v7 so files when the ABI upgrade to armeabi-v7(the armeabi so file exist, but the armeabi-v7 so file not exist).\n" +
+                        "\n" +
+                        "这个插件用于修复将ABI由 armeabi 升级至 armeabi-v7a 时，由于部分类库只提供了 armeabi 下的 ‘.so’ 文件,而没有提供 armeabi-v7a 下的‘.so’文件 而导致的错误。\n" +
+                        "\n" +
+                        "详细分析过程可以参考：https://www.jianshu.com/p/5e8caa25629d"
+                url = "https://github.com/zhangguoning/FixArmeabiV7libsPlugin"
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "zhangguoning"
+                        name = "zhangguoning"
+                        email = "545458142@qq.com"
+                    }
+                }
+                scm {
+                    connection = "scm:git:https://github.com/zhangguoning/FixArmeabiV7libsPlugin.git"
+                    developerConnection = "scm:git:https://github.com/zhangguoning/FixArmeabiV7libsPlugin.git"
+                    url = "https://github.com/zhangguoning/FixArmeabiV7libsPlugin"
+                }
+            }
         }
     }
-    mavenCoordinates {
-        groupId = "cn.ning.android.gradle.plugin"
-        artifactId = "fix_v7libs"
-        version = "1.0.1"
+    repositories {
+        maven {
+            name 'sonatypeRepository'
+            url 'https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/'
+            credentials {
+                username = "${NEXUS_USERNAME}"
+                password = "${NEXUS_PASSWORD}"
+            }
+        }
+        maven {
+            name = 'sonatypeSnapshotRepository'
+            url = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+            credentials {
+                username = "${NEXUS_USERNAME}"
+                password = "${NEXUS_PASSWORD}"
+            }
+        }
     }
+}
+
+// 签名配置，注意这里的顺序，今天第一次知道 gradle 中的 task 等配置也是有顺序的
+// 必须在 publishing 配置之后
+signing {
+    sign publishing.publications.mavenJava
 }
